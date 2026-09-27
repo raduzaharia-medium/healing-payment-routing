@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f5f0" />
+    <title>Payment Route Health</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script type="module" src="js/index.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="page-heading" id="main">
+        <div>
+          <h1>Payment route health</h1>
+        </div>
+        <div class="heading-actions">
+          <label class="auto-control" for="autoTraffic">
+            <input id="autoTraffic" type="checkbox" />
+            <span class="switch" aria-hidden="true"></span>
+            <span>Auto traffic</span>
+          </label>
+          <label class="profile-control" for="transactionProfile">
+            <span>Payment profile</span>
+            <select id="transactionProfile">
+              <option value="standard">Standard · balanced</option>
+              <option value="priority">Priority · reliability-first</option>
+              <option value="feeSensitive">Fee-sensitive · lower cost</option>
+            </select>
+          </label>
+          <label class="profile-control market-control" for="merchantCountry">
+            <span>Merchant country</span>
+            <select id="merchantCountry">
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="DE">Germany</option>
+            </select>
+          </label>
+          <label
+            class="profile-control market-control"
+            for="settlementCurrency"
+          >
+            <span>Currency</span>
+            <select id="settlementCurrency">
+              <option value="USD">USD</option>
+              <option value="GBP">GBP</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </label>
+          <div class="send-actions">
+            <button
+              class="button button-primary"
+              id="sendPayment"
+              type="button"
+            >
+              <span aria-hidden="true">+</span> Send payment
+            </button>
+            <button
+              class="button button-failure"
+              id="sendFailedPayment"
+              type="button"
+            >
+              Send failed payment
+            </button>
+          </div>
+          <button
+            class="button button-quiet"
+            id="resetDemo"
+            type="button"
+            title="Reset simulation"
+          >
+            Reset
+          </button>
+        </div>
+      </section>
+
+      <section class="metric-strip" aria-label="Route performance">
+        <div class="metric">
+          <span>PAYMENTS</span><strong id="metricPayments">0</strong>
+        </div>
+        <div class="metric">
+          <span>DELIVERED</span><strong id="metricDelivered">0</strong>
+        </div>
+        <div class="metric">
+          <span>FAILED OVER</span><strong id="metricFailovers">0</strong>
+        </div>
+        <div class="metric metric-rate">
+          <span>DELIVERY RATE</span><strong id="metricRate">--</strong>
+        </div>
+        <p
+          class="live-message"
+          id="liveMessage"
+          role="status"
+          aria-live="polite"
+        >
+          Ready for payment traffic
+        </p>
+      </section>
+
+      <div class="workspace-grid">
+        <section class="main-column">
+          <section class="panel route-panel" aria-labelledby="routeTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">LIVE TOPOLOGY</p>
+                <h2 id="routeTitle">PCI authorization</h2>
+              </div>
+              <span class="route-tag"
+                ><span class="live-dot"></span> ACTIVE</span
+              >
+            </div>
+            <div class="route-map-wrap">
+              <svg
+                class="route-map"
+                viewBox="0 0 900 610"
+                role="img"
+                aria-labelledby="mapTitle mapDescription"
+              >
+                <title id="mapTitle">PCI payment route map</title>
+                <desc id="mapDescription">
+                  Payments enter through the gateway. Particle swarm
+                  candidates allocate traffic across five acquirers: Adyen,
+                  Chase EU, Worldpay EU, Stripe, and Braintree.
+                </desc>
+                <path
+                  class="route-line"
+                  id="route-adyen"
+                  d="M 232 292 C 365 292, 398 56, 535 56"
+                ></path>
+                <path
+                  class="route-line"
+                  id="route-chase"
+                  d="M 232 292 C 365 292, 398 174, 535 174"
+                ></path>
+                <path
+                  class="route-line"
+                  id="route-worldpay"
+                  d="M 232 292 C 365 292, 398 292, 535 292"
+                ></path>
+                <path
+                  class="route-line"
+                  id="route-stripe"
+                  d="M 232 292 C 365 292, 398 410, 535 410"
+                ></path>
+                <path
+                  class="route-line"
+                  id="route-braintree"
+                  d="M 232 292 C 365 292, 398 528, 535 528"
+                ></path>
+                <g id="swarmParticles" aria-hidden="true"></g>
+                <g class="map-node gateway-node">
+                  <rect x="42" y="250" width="190" height="84" rx="5"></rect>
+                  <circle cx="68" cy="292" r="7"></circle>
+                  <text class="node-kicker" x="88" y="283">ENTRY POINT</text>
+                  <text class="node-title" x="88" y="307">PCI gateway</text>
+                </g>
+                <g class="map-node provider-node" id="mapNode-adyen">
+                  <rect x="535" y="16" width="320" height="80" rx="5"></rect>
+                  <circle
+                    class="node-indicator"
+                    cx="565"
+                    cy="56"
+                    r="7"
+                  ></circle>
+                  <text class="node-kicker" x="586" y="47">ACQUIRER 01</text>
+                  <text class="node-title" x="586" y="71">Adyen API</text>
+                  <text
+                    class="node-meta"
+                    id="adyenMapStatus"
+                    x="823"
+                    y="66"
+                    text-anchor="end"
+                  >
+                    HEALTHY
+                  </text>
+                </g>
+                <g class="map-node provider-node" id="mapNode-chase">
+                  <rect x="535" y="134" width="320" height="80" rx="5"></rect>
+                  <circle
+                    class="node-indicator"
+                    cx="565"
+                    cy="174"
+                    r="7"
+                  ></circle>
+                  <text class="node-kicker" x="586" y="165">ACQUIRER 02</text>
+                  <text class="node-title" x="586" y="189">Chase EU</text>
+                  <text
+                    class="node-meta"
+                    id="chaseMapStatus"
+                    x="823"
+                    y="184"
+                    text-anchor="end"
+                  >
+                    HEALTHY
+                  </text>
+                </g>
+                <g class="map-node provider-node" id="mapNode-worldpay">
+                  <rect x="535" y="252" width="320" height="80" rx="5"></rect>
+                  <circle
+                    class="node-indicator"
+                    cx="565"
+                    cy="292"
+                    r="7"
+                  ></circle>
+                  <text class="node-kicker" x="586" y="283">ACQUIRER 03</text>
+                  <text class="node-title" x="586" y="307">Worldpay EU</text>
+                  <text
+                    class="node-meta"
+                    id="worldpayMapStatus"
+                    x="823"
+                    y="302"
+                    text-anchor="end"
+                  >
+                    HEALTHY
+                  </text>
+                </g>
+                <g class="map-node provider-node" id="mapNode-stripe">
+                  <rect x="535" y="370" width="320" height="80" rx="5"></rect>
+                  <circle
+                    class="node-indicator"
+                    cx="565"
+                    cy="410"
+                    r="7"
+                  ></circle>
+                  <text class="node-kicker" x="586" y="401">ACQUIRER 04</text>
+                  <text class="node-title" x="586" y="425">Stripe API</text>
+                  <text
+                    class="node-meta"
+                    id="stripeMapStatus"
+                    x="823"
+                    y="420"
+                    text-anchor="end"
+                  >
+                    HEALTHY
+                  </text>
+                </g>
+                <g class="map-node provider-node" id="mapNode-braintree">
+                  <rect x="535" y="488" width="320" height="80" rx="5"></rect>
+                  <circle
+                    class="node-indicator"
+                    cx="565"
+                    cy="528"
+                    r="7"
+                  ></circle>
+                  <text class="node-kicker" x="586" y="519">ACQUIRER 05</text>
+                  <text class="node-title" x="586" y="543">Braintree API</text>
+                  <text
+                    class="node-meta"
+                    id="braintreeMapStatus"
+                    x="823"
+                    y="538"
+                    text-anchor="end"
+                  >
+                    HEALTHY
+                  </text>
+                </g>
+                <circle
+                  class="payment-packet"
+                  id="paymentPacket"
+                  r="8"
+                  visibility="hidden"
+                ></circle>
+              </svg>
+            </div>
+            <div class="map-footer">
+              <div class="map-legend">
+                <span><i class="legend-line"></i> Available route</span
+                ><span
+                  ><i class="legend-line legend-active"></i> Payment in
+                  flight</span
+                ><span><i class="legend-particle"></i> PSO particles</span>
+              </div>
+              <span id="routeDecision">PSO split pending</span>
+            </div>
+          </section>
+
+          <section class="panel swarm-panel" aria-labelledby="swarmTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">
+                  POLICY SEARCH · <span id="swarmProfileName">STANDARD</span>
+                </p>
+                <h2 id="swarmTitle">Particle population</h2>
+              </div>
+              <span class="swarm-allocation" id="swarmAllocation">PSO MIX</span>
+            </div>
+            <div class="swarm-chart-wrap">
+              <svg
+                class="swarm-chart"
+                viewBox="0 0 540 280"
+                role="img"
+                aria-labelledby="swarmChartTitle swarmChartDescription"
+              >
+                <title id="swarmChartTitle">Particle swarm policy search</title>
+                <desc id="swarmChartDescription">
+                  One row per provider. Each dot is a candidate policy's
+                  traffic share for that provider; the outlined marker shows
+                  the share the swarm has settled on.
+                </desc>
+                <g id="swarmChartRows"></g>
+                <text
+                  class="swarm-axis-title"
+                  x="270"
+                  y="268"
+                  text-anchor="middle"
+                >
+                  TRAFFIC SHARE PER PROVIDER
+                </text>
+              </svg>
+            </div>
+            <div class="swarm-legend">
+              <span><i class="legend-particle"></i> Candidate policy</span
+              ><span><i class="legend-optimum"></i> Best found</span>
+            </div>
+          </section>
+
+          <section
+            class="panel benchmark-panel"
+            aria-labelledby="benchmarkTitle"
+          >
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">SYNTHETIC LOAD TEST</p>
+                <h2 id="benchmarkTitle">PSO vs single-provider rule</h2>
+              </div>
+              <button
+                class="button button-primary"
+                id="runBenchmark"
+                type="button"
+              >
+                Run benchmark
+              </button>
+            </div>
+            <p class="benchmark-note">
+              The workload is 55% Standard, 25% Priority, and 20% Fee-sensitive.
+              Each gets its own allocation but shares provider capacity. Ten
+              paired seeds use 1,200 requests each; greedy moves 1% between
+              providers by marginal utility, while the single-provider rule
+              sends everything to the best provider at full load.
+            </p>
+            <div class="benchmark-results">
+              <div class="benchmark-column">
+                <p class="eyebrow">BEST SINGLE-PROVIDER IF/ELSE</p>
+                <strong class="benchmark-mix" id="baselineMix">Not run</strong>
+                <dl class="benchmark-metrics">
+                  <div>
+                    <dt>FIRST-ATTEMPT APPROVALS</dt>
+                    <dd id="baselineApproval">--</dd>
+                  </div>
+                  <div>
+                    <dt>MEAN LATENCY</dt>
+                    <dd id="baselineLatency">--</dd>
+                  </div>
+                  <div>
+                    <dt>MEAN FEE</dt>
+                    <dd id="baselineFee">--</dd>
+                  </div>
+                  <div>
+                    <dt>UTILITY / REQUEST</dt>
+                    <dd id="baselineUtility">--</dd>
+                  </div>
+                  <div>
+                    <dt>FITNESS EVALUATIONS</dt>
+                    <dd id="baselineEvaluations">--</dd>
+                  </div>
+                </dl>
+              </div>
+              <div class="benchmark-column benchmark-greedy">
+                <p class="eyebrow">CAPACITY-AWARE IF/THEN</p>
+                <strong class="benchmark-mix" id="greedyMix">Not run</strong>
+                <dl class="benchmark-metrics">
+                  <div>
+                    <dt>FIRST-ATTEMPT APPROVALS</dt>
+                    <dd id="greedyApproval">--</dd>
+                  </div>
+                  <div>
+                    <dt>MEAN LATENCY</dt>
+                    <dd id="greedyLatency">--</dd>
+                  </div>
+                  <div>
+                    <dt>MEAN FEE</dt>
+                    <dd id="greedyFee">--</dd>
+                  </div>
+                  <div>
+                    <dt>UTILITY / REQUEST</dt>
+                    <dd id="greedyUtility">--</dd>
+                  </div>
+                  <div>
+                    <dt>FITNESS EVALUATIONS</dt>
+                    <dd id="greedyEvaluations">--</dd>
+                  </div>
+                </dl>
+              </div>
+              <div class="benchmark-column benchmark-pso">
+                <p class="eyebrow">PARTICLE SWARM</p>
+                <strong class="benchmark-mix" id="psoMix">Not run</strong>
+                <dl class="benchmark-metrics">
+                  <div>
+                    <dt>FIRST-ATTEMPT APPROVALS</dt>
+                    <dd id="psoApproval">--</dd>
+                  </div>
+                  <div>
+                    <dt>MEAN LATENCY</dt>
+                    <dd id="psoLatency">--</dd>
+                  </div>
+                  <div>
+                    <dt>MEAN FEE</dt>
+                    <dd id="psoFee">--</dd>
+                  </div>
+                  <div>
+                    <dt>UTILITY / REQUEST</dt>
+                    <dd id="psoUtility">--</dd>
+                  </div>
+                  <div>
+                    <dt>FITNESS EVALUATIONS</dt>
+                    <dd id="psoEvaluations">--</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+            <p class="benchmark-summary" id="benchmarkSummary" role="status">
+              Not benchmarked yet
+            </p>
+          </section>
+
+          <section class="panel stress-panel" aria-labelledby="stressTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">WHERE DOES A SWARM ACTUALLY WIN?</p>
+                <h2 id="stressTitle">Algorithm stress tests</h2>
+              </div>
+            </div>
+            <p class="benchmark-note">
+              The load test above rewards pure exploitation on a smooth,
+              low-dimensional landscape — exactly where a direct search wins.
+              These two tests change the landscape's shape instead of just
+              re-running the same one: one adds a reward you can only reach by
+              passing through a worse patch first, the other scales up the
+              number of routing choices.
+            </p>
+
+            <div class="stress-test">
+              <div class="stress-test-heading">
+                <div>
+                  <p class="eyebrow">TEST 1 · MULTI-MODAL LANDSCAPE</p>
+                  <h3>Volume-discount cliff</h3>
+                </div>
+                <button
+                  class="button button-primary"
+                  id="runLandscapeTest"
+                  type="button"
+                >
+                  Run test
+                </button>
+              </div>
+              <p class="benchmark-note">
+                One provider offers a volume rebate once it carries at least
+                55% of traffic. Reaching that share means passing through
+                allocations that are worse than staying put, so a local
+                optimum sits between the start and the reward. 30 random
+                provider setups, each scored against a fine grid-search
+                optimum.
+              </p>
+              <div class="benchmark-results stress-results">
+                <div class="benchmark-column">
+                  <p class="eyebrow">GREEDY (1% MOVES)</p>
+                  <dl class="benchmark-metrics">
+                    <div>
+                      <dt>FOUND THE REBATE WHEN IT MATTERED</dt>
+                      <dd id="landscapeGreedyHitRate">--</dd>
+                    </div>
+                    <div>
+                      <dt>MEAN GAP TO OPTIMUM</dt>
+                      <dd id="landscapeGreedyGap">--</dd>
+                    </div>
+                    <div>
+                      <dt>MEAN FITNESS EVALUATIONS</dt>
+                      <dd id="landscapeGreedyEvaluations">--</dd>
+                    </div>
+                  </dl>
+                </div>
+                <div class="benchmark-column benchmark-pso">
+                  <p class="eyebrow">PARTICLE SWARM</p>
+                  <dl class="benchmark-metrics">
+                    <div>
+                      <dt>FOUND THE REBATE WHEN IT MATTERED</dt>
+                      <dd id="landscapePsoHitRate">--</dd>
+                    </div>
+                    <div>
+                      <dt>MEAN GAP TO OPTIMUM</dt>
+                      <dd id="landscapePsoGap">--</dd>
+                    </div>
+                    <div>
+                      <dt>MEAN FITNESS EVALUATIONS</dt>
+                      <dd id="landscapePsoEvaluations">--</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+              <p class="benchmark-summary" id="landscapeSummary" role="status">
+                Not run yet
+              </p>
+            </div>
+
+            <div class="stress-test">
+              <div class="stress-test-heading">
+                <div>
+                  <p class="eyebrow">TEST 2 · DIMENSIONAL SCALING</p>
+                  <h3>More routing choices</h3>
+                </div>
+                <button
+                  class="button button-primary"
+                  id="runScalingTest"
+                  type="button"
+                >
+                  Run test
+                </button>
+              </div>
+              <p class="benchmark-note">
+                Same style of smooth landscape as the load test above, but
+                with 3 to 25 synthetic providers instead of 3. Greedy
+                re-checks every from/to provider pair on each move; the
+                swarm's cost per iteration is set by its fixed particle
+                count, not by the number of providers.
+              </p>
+              <div class="scaling-table-wrap">
+                <table class="scaling-table" id="scalingTable">
+                  <thead>
+                    <tr>
+                      <th>PROVIDERS</th>
+                      <th>GREEDY EVALS</th>
+                      <th>PSO EVALS</th>
+                      <th>GREEDY UTILITY</th>
+                      <th>PSO UTILITY</th>
+                      <th>GREEDY TIME</th>
+                      <th>PSO TIME</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scalingTableBody">
+                    <tr>
+                      <td colspan="7" class="scaling-empty">Not run yet</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="benchmark-summary" id="scalingSummary" role="status"></p>
+            </div>
+
+            <div class="stress-test">
+              <div class="stress-test-heading">
+                <div>
+                  <p class="eyebrow">TEST 3 · NOISY EVALUATIONS</p>
+                  <h3>Sampled instead of exact fitness</h3>
+                </div>
+                <button
+                  class="button button-primary"
+                  id="runNoiseTest"
+                  type="button"
+                >
+                  Run test
+                </button>
+              </div>
+              <p class="benchmark-note">
+                Real traffic doesn't hand you a closed-form expected utility —
+                it hands you the realized outcome of however many
+                transactions you've actually routed so far. Here each fitness
+                call only sees 15 simulated transactions instead of the exact
+                expectation. Greedy commits to a move the moment one noisy
+                comparison looks best and never revisits it; the swarm keeps
+                re-sampling across many particles every iteration. 40 random
+                provider setups, each scored against the true (noise-free)
+                optimum.
+              </p>
+              <div class="benchmark-results stress-results">
+                <div class="benchmark-column">
+                  <p class="eyebrow">GREEDY (1% MOVES)</p>
+                  <dl class="benchmark-metrics">
+                    <div>
+                      <dt>MEAN GAP TO TRUE OPTIMUM</dt>
+                      <dd id="noiseGreedyMeanGap">--</dd>
+                    </div>
+                    <div>
+                      <dt>GAP STD. DEVIATION</dt>
+                      <dd id="noiseGreedyStddev">--</dd>
+                    </div>
+                    <div>
+                      <dt>WORST-CASE GAP</dt>
+                      <dd id="noiseGreedyWorst">--</dd>
+                    </div>
+                  </dl>
+                </div>
+                <div class="benchmark-column benchmark-pso">
+                  <p class="eyebrow">PARTICLE SWARM</p>
+                  <dl class="benchmark-metrics">
+                    <div>
+                      <dt>MEAN GAP TO TRUE OPTIMUM</dt>
+                      <dd id="noisePsoMeanGap">--</dd>
+                    </div>
+                    <div>
+                      <dt>GAP STD. DEVIATION</dt>
+                      <dd id="noisePsoStddev">--</dd>
+                    </div>
+                    <div>
+                      <dt>WORST-CASE GAP</dt>
+                      <dd id="noisePsoWorst">--</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+              <p class="benchmark-summary" id="noiseSummary" role="status">
+                Not run yet
+              </p>
+            </div>
+          </section>
+
+          <section class="panel activity-panel" aria-labelledby="activityTitle">
+            <div class="panel-heading activity-heading">
+              <div>
+                <p class="eyebrow">TRANSACTION TRACE</p>
+                <h2 id="activityTitle">Recent activity</h2>
+              </div>
+              <span class="activity-count" id="activityCount">0 EVENTS</span>
+            </div>
+            <ol class="event-list" id="eventList" aria-live="polite">
+              <li class="empty-event">No payment activity yet</li>
+            </ol>
+          </section>
+        </section>
+
+        <aside
+          class="side-column"
+          aria-label="Provider health and fault injection"
+        >
+          <section
+            class="panel providers-panel"
+            aria-labelledby="providersTitle"
+          >
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">ROUTE CANDIDATES</p>
+                <h2 id="providersTitle">Provider health</h2>
+              </div>
+            </div>
+            <article
+              class="provider-card"
+              id="provider-adyen"
+              data-provider="adyen"
+            >
+              <div class="provider-topline">
+                <span class="provider-name">Adyen API</span
+                ><span class="provider-state" id="adyenState">HEALTHY</span>
+              </div>
+              <div class="health-row">
+                <strong id="adyenHealth">100</strong><span>health</span
+                ><span class="provider-latency" id="adyenLatency">148 ms</span>
+              </div>
+              <div class="health-track"><span id="adyenHealthBar"></span></div>
+              <p class="provider-capabilities" id="adyenCapabilities"></p>
+              <div class="provider-stats">
+                <span><b id="adyenSuccess">0</b> approved</span
+                ><span><b id="adyenFailures">0</b> failed</span>
+              </div>
+              <p class="provider-commitment" id="adyenCommitment" hidden></p>
+              <label class="fault-control" for="degradeAdyen"
+                ><input id="degradeAdyen" type="checkbox" data-provider="adyen" /><span
+                  >Inject outage</span
+                ></label
+              >
+              <details class="provider-config">
+                <summary>Configure rules</summary>
+                <label class="config-row"
+                  >Fee adjustment (bps)
+                  <input
+                    type="number"
+                    data-provider="adyen"
+                    data-field="feeAdjustmentBps"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Latency adjustment (ms)
+                  <input
+                    type="number"
+                    data-provider="adyen"
+                    data-field="latencyAdjustmentMs"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Approval rate (%)
+                  <input
+                    type="number"
+                    data-provider="adyen"
+                    data-field="baseApprovalRate"
+                    value="99.2"
+                    min="80"
+                    max="99.9"
+                    step="0.1"
+                /></label>
+                <label class="config-row"
+                  >Capacity share
+                  <input
+                    type="number"
+                    data-provider="adyen"
+                    data-field="capacityShare"
+                    value="0.45"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                /></label>
+                <label class="config-row"
+                  >Min. volume commitment (%)
+                  <input
+                    type="number"
+                    data-provider="adyen"
+                    data-field="minVolumeCommitment"
+                    value="45"
+                    min="0"
+                    max="70"
+                    step="1"
+                /></label>
+              </details>
+            </article>
+            <article
+              class="provider-card"
+              id="provider-chase"
+              data-provider="chase"
+            >
+              <div class="provider-topline">
+                <span class="provider-name">Chase EU</span
+                ><span class="provider-state" id="chaseState">HEALTHY</span>
+              </div>
+              <div class="health-row">
+                <strong id="chaseHealth">100</strong><span>health</span
+                ><span class="provider-latency" id="chaseLatency">196 ms</span>
+              </div>
+              <div class="health-track"><span id="chaseHealthBar"></span></div>
+              <p class="provider-capabilities" id="chaseCapabilities"></p>
+              <div class="provider-stats">
+                <span><b id="chaseSuccess">0</b> approved</span
+                ><span><b id="chaseFailures">0</b> failed</span>
+              </div>
+              <p class="provider-commitment" id="chaseCommitment" hidden></p>
+              <label class="fault-control" for="degradeChase"
+                ><input id="degradeChase" type="checkbox" data-provider="chase" /><span
+                  >Inject outage</span
+                ></label
+              >
+              <details class="provider-config">
+                <summary>Configure rules</summary>
+                <label class="config-row"
+                  >Fee adjustment (bps)
+                  <input
+                    type="number"
+                    data-provider="chase"
+                    data-field="feeAdjustmentBps"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Latency adjustment (ms)
+                  <input
+                    type="number"
+                    data-provider="chase"
+                    data-field="latencyAdjustmentMs"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Approval rate (%)
+                  <input
+                    type="number"
+                    data-provider="chase"
+                    data-field="baseApprovalRate"
+                    value="98.8"
+                    min="80"
+                    max="99.9"
+                    step="0.1"
+                /></label>
+                <label class="config-row"
+                  >Capacity share
+                  <input
+                    type="number"
+                    data-provider="chase"
+                    data-field="capacityShare"
+                    value="0.4"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                /></label>
+                <label class="config-row"
+                  >Min. volume commitment (%)
+                  <input
+                    type="number"
+                    data-provider="chase"
+                    data-field="minVolumeCommitment"
+                    value="0"
+                    min="0"
+                    max="70"
+                    step="1"
+                /></label>
+              </details>
+            </article>
+            <article
+              class="provider-card"
+              id="provider-worldpay"
+              data-provider="worldpay"
+            >
+              <div class="provider-topline">
+                <span class="provider-name">Worldpay EU</span
+                ><span class="provider-state" id="worldpayState">HEALTHY</span>
+              </div>
+              <div class="health-row">
+                <strong id="worldpayHealth">100</strong><span>health</span
+                ><span class="provider-latency" id="worldpayLatency"
+                  >175 ms</span
+                >
+              </div>
+              <div class="health-track">
+                <span id="worldpayHealthBar"></span>
+              </div>
+              <p class="provider-capabilities" id="worldpayCapabilities"></p>
+              <div class="provider-stats">
+                <span><b id="worldpaySuccess">0</b> approved</span
+                ><span><b id="worldpayFailures">0</b> failed</span>
+              </div>
+              <p class="provider-commitment" id="worldpayCommitment" hidden></p>
+              <label class="fault-control" for="degradeWorldpay"
+                ><input id="degradeWorldpay" type="checkbox" data-provider="worldpay" /><span
+                  >Inject outage</span
+                ></label
+              >
+              <details class="provider-config">
+                <summary>Configure rules</summary>
+                <label class="config-row"
+                  >Fee adjustment (bps)
+                  <input
+                    type="number"
+                    data-provider="worldpay"
+                    data-field="feeAdjustmentBps"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Latency adjustment (ms)
+                  <input
+                    type="number"
+                    data-provider="worldpay"
+                    data-field="latencyAdjustmentMs"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Approval rate (%)
+                  <input
+                    type="number"
+                    data-provider="worldpay"
+                    data-field="baseApprovalRate"
+                    value="98.5"
+                    min="80"
+                    max="99.9"
+                    step="0.1"
+                /></label>
+                <label class="config-row"
+                  >Capacity share
+                  <input
+                    type="number"
+                    data-provider="worldpay"
+                    data-field="capacityShare"
+                    value="0.35"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                /></label>
+                <label class="config-row"
+                  >Min. volume commitment (%)
+                  <input
+                    type="number"
+                    data-provider="worldpay"
+                    data-field="minVolumeCommitment"
+                    value="0"
+                    min="0"
+                    max="70"
+                    step="1"
+                /></label>
+              </details>
+            </article>
+            <article
+              class="provider-card"
+              id="provider-stripe"
+              data-provider="stripe"
+            >
+              <div class="provider-topline">
+                <span class="provider-name">Stripe API</span>
+                <span class="provider-state" id="stripeState">HEALTHY</span>
+              </div>
+              <div class="health-row">
+                <strong id="stripeHealth">99</strong><span>health</span>
+                <span class="provider-latency" id="stripeLatency">145 ms</span>
+              </div>
+              <div class="health-track"><span id="stripeHealthBar"></span></div>
+              <p class="provider-capabilities" id="stripeCapabilities"></p>
+              <div class="provider-stats">
+                <span><b id="stripeSuccess">0</b> approved</span>
+                <span><b id="stripeFailures">0</b> failed</span>
+              </div>
+              <p class="provider-commitment" id="stripeCommitment" hidden></p>
+              <label class="fault-control" for="degradeStripe">
+                <input id="degradeStripe" type="checkbox" data-provider="stripe" /><span
+                  >Inject outage</span
+                >
+              </label>
+              <details class="provider-config">
+                <summary>Configure rules</summary>
+                <label class="config-row"
+                  >Fee adjustment (bps)
+                  <input
+                    type="number"
+                    data-provider="stripe"
+                    data-field="feeAdjustmentBps"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Latency adjustment (ms)
+                  <input
+                    type="number"
+                    data-provider="stripe"
+                    data-field="latencyAdjustmentMs"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Approval rate (%)
+                  <input
+                    type="number"
+                    data-provider="stripe"
+                    data-field="baseApprovalRate"
+                    value="98.7"
+                    min="80"
+                    max="99.9"
+                    step="0.1"
+                /></label>
+                <label class="config-row"
+                  >Capacity share
+                  <input
+                    type="number"
+                    data-provider="stripe"
+                    data-field="capacityShare"
+                    value="0.58"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                /></label>
+                <label class="config-row"
+                  >Min. volume commitment (%)
+                  <input
+                    type="number"
+                    data-provider="stripe"
+                    data-field="minVolumeCommitment"
+                    value="0"
+                    min="0"
+                    max="70"
+                    step="1"
+                /></label>
+              </details>
+            </article>
+            <article
+              class="provider-card"
+              id="provider-braintree"
+              data-provider="braintree"
+            >
+              <div class="provider-topline">
+                <span class="provider-name">Braintree API</span>
+                <span class="provider-state" id="braintreeState">HEALTHY</span>
+              </div>
+              <div class="health-row">
+                <strong id="braintreeHealth">99</strong><span>health</span>
+                <span class="provider-latency" id="braintreeLatency"
+                  >160 ms</span
+                >
+              </div>
+              <div class="health-track">
+                <span id="braintreeHealthBar"></span>
+              </div>
+              <p class="provider-capabilities" id="braintreeCapabilities"></p>
+              <div class="provider-stats">
+                <span><b id="braintreeSuccess">0</b> approved</span>
+                <span><b id="braintreeFailures">0</b> failed</span>
+              </div>
+              <p
+                class="provider-commitment"
+                id="braintreeCommitment"
+                hidden
+              ></p>
+              <label class="fault-control" for="degradeBraintree">
+                <input id="degradeBraintree" type="checkbox" data-provider="braintree" /><span
+                  >Inject outage</span
+                >
+              </label>
+              <details class="provider-config">
+                <summary>Configure rules</summary>
+                <label class="config-row"
+                  >Fee adjustment (bps)
+                  <input
+                    type="number"
+                    data-provider="braintree"
+                    data-field="feeAdjustmentBps"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Latency adjustment (ms)
+                  <input
+                    type="number"
+                    data-provider="braintree"
+                    data-field="latencyAdjustmentMs"
+                    value="0"
+                    step="5"
+                /></label>
+                <label class="config-row"
+                  >Approval rate (%)
+                  <input
+                    type="number"
+                    data-provider="braintree"
+                    data-field="baseApprovalRate"
+                    value="99.0"
+                    min="80"
+                    max="99.9"
+                    step="0.1"
+                /></label>
+                <label class="config-row"
+                  >Capacity share
+                  <input
+                    type="number"
+                    data-provider="braintree"
+                    data-field="capacityShare"
+                    value="0.5"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                /></label>
+                <label class="config-row"
+                  >Min. volume commitment (%)
+                  <input
+                    type="number"
+                    data-provider="braintree"
+                    data-field="minVolumeCommitment"
+                    value="0"
+                    min="0"
+                    max="70"
+                    step="1"
+                /></label>
+              </details>
+            </article>
+            <p class="provider-footnote">
+              Load creates congestion; failures lower health and successful
+              retries raise it. Configure rules to add your own constraints —
+              nothing here is hardcoded.
+            </p>
+          </section>
+          <section class="signal-panel" aria-label="Current routing decision">
+            <span class="signal-icon" aria-hidden="true">↗</span>
+            <div>
+              <p class="eyebrow">ROUTER DECISION</p>
+              <p id="decisionDetail">
+                Traffic will use the healthiest available provider.
+              </p>
+              <p id="naiveComparison" class="naive-comparison"></p>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </body>
+</html>
